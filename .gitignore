@@ -399,3 +399,11 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml
+
+# React y Frontend
+node_modules/
+dist/
+build/
+.env
+.env.local
+.DS_Store
