@@ -1,0 +1,33 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36717.8 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{54A90642-561A-4BB1-A94E-469ADEE60C69}") = "sega.client", "sega.client\sega.client.esproj", "{500EEA19-2E7D-B6E6-A6B6-77B98E0F9CDF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SEGA.Server", "SEGA.Server\SEGA.Server.csproj", "{9C5FAF2C-FF01-48D7-A985-48ECA6245B95}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{500EEA19-2E7D-B6E6-A6B6-77B98E0F9CDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{500EEA19-2E7D-B6E6-A6B6-77B98E0F9CDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{500EEA19-2E7D-B6E6-A6B6-77B98E0F9CDF}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{500EEA19-2E7D-B6E6-A6B6-77B98E0F9CDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{500EEA19-2E7D-B6E6-A6B6-77B98E0F9CDF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{500EEA19-2E7D-B6E6-A6B6-77B98E0F9CDF}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{9C5FAF2C-FF01-48D7-A985-48ECA6245B95}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C5FAF2C-FF01-48D7-A985-48ECA6245B95}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C5FAF2C-FF01-48D7-A985-48ECA6245B95}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C5FAF2C-FF01-48D7-A985-48ECA6245B95}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {AB7271AB-0B5B-4083-A38A-51A3AE17B1B5}
+	EndGlobalSection
+EndGlobal
