@@ -1,11 +1,38 @@
-﻿#root {
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 2rem;
-    text-align: center;
+﻿*, *::before, *::after {
+    box-sizing: border-box;
 }
 
-th, td {
-    padding-left: 1rem;
-    padding-right: 1rem;
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', 'Roboto', sans-serif;
+    background-color: #f8f9fa;
+    overflow-x: hidden; /* Evita scroll horizontal innecesario */
+}
+
+/* CONTENEDOR PRINCIPAL: Ocupa todo el ancho y alto */
+.app-container {
+    width: 100%; /* Antes era max-width: 1200px */
+    min-height: 100vh; /* Ocupa al menos toda la altura de la pantalla */
+    display: flex;
+    flex-direction: column;
+    background-color: #f8f9fa;
+}
+
+/* EL ÁREA DE CONTENIDO (Donde van las tablas) */
+main {
+    flex: 1; /* Empuja el footer hacia abajo si hay poco contenido */
+    padding: 20px 40px; /* Espacio a los lados para que no toque los bordes */
+    width: 100%;
+    box-sizing: border-box; /* Importante para que el padding no genere scroll */
+}
+
+/* TABLAS FULL WIDTH */
+table {
+    width: 100%; /* Forzar tabla al 100% */
+    background-color: white;
+    border-collapse: collapse;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border-radius: 8px;
+    overflow: hidden;
 }

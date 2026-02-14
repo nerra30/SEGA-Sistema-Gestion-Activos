@@ -1,5 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
 import { getUsuarios } from '../services/api';
+import logo from '../assets/logo.png';
 
 function Login({ onLogin }) {
     const [email, setEmail] = useState("");
@@ -73,7 +74,7 @@ function Login({ onLogin }) {
     return (
         <div style={styles.container}>
             <div style={styles.card}>
-                <h1 style={{ color: '#0078D4', margin: '0 0 10px 0' }}>SEGA</h1>
+                <img src={logo} alt="Logo SEGA" style={{ width: '300px', marginBottom: '20px' }} />
                 <p style={{ color: '#666', marginBottom: '20px' }}>Sistema de Gestión de Activos</p>
 
                 <form onSubmit={handleLogin} style={styles.form}>
@@ -110,16 +111,16 @@ function Login({ onLogin }) {
 
                 {/* ATAJOS DE DESARROLLO (DEV TOOLS) */}
                 <div style={{ background: '#f9f9f9', padding: '10px', borderRadius: '8px' }}>
-                    <h4 style={{ margin: '0 0 10px 0', color: '#555' }}>🛠️ Accesos Rápidos (Testing)</h4>
+                    <h4 style={{ margin: '0 0 10px 0', color: '#555' }}>Accesos Rápidos (pruebas)</h4>
                     <div style={{ display: 'flex', gap: '10px', flexDirection: 'column' }}>
-                        <button onClick={() => loginRapido('admin@sega.com', 'admin123')} style={styles.quickBtn}>
-                            🛡️ Entrar como Admin
+                        <button onClick={() => loginRapido('admin@sega.com', '123')} style={styles.quickBtn}>
+                            Entrar como Admin
                         </button>
-                        <button onClick={() => loginRapido('maria.g@escuela.edu', 'user123')} style={styles.quickBtn}>
-                            💼 Entrar como Gestor
+                        <button onClick={() => loginRapido('juan@escuela.edu', '123')} style={styles.quickBtn}>
+                            Entrar como Gestor
                         </button>
-                        <button onClick={() => loginRapido('juan.perez@escuela.edu', 'user123')} style={styles.quickBtn}>
-                            👤 Entrar como Solicitante
+                        <button onClick={() => loginRapido('maria@escuela.edu', '123')} style={styles.quickBtn}>
+                            Entrar como Solicitante
                         </button>
                     </div>
                 </div>
