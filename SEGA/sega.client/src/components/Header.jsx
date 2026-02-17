@@ -30,7 +30,7 @@ function Header({ usuario, vistaActual, cambiarVista, onLogout }) {
                 <nav style={{ display: 'flex', gap: '5px' }}>
                     {usuario.rol === 'Solicitante' && (
                         <>
-                            <button style={btnStyle('solicitar')} onClick={() => cambiarVista('solicitar')}>Catálogo</button>
+                            <button style={btnStyle('solicitar')} onClick={() => cambiarVista('solicitar')}>Solicitar Préstamo</button>
                             <button style={btnStyle('mis-prestamos')} onClick={() => cambiarVista('mis-prestamos')}>Mis Préstamos</button>
                         </>
                     )}
@@ -71,12 +71,9 @@ function Header({ usuario, vistaActual, cambiarVista, onLogout }) {
                         fontWeight: '600',         // Un poco más grueso para que destaque
                         textTransform: 'uppercase', // Opcional: en mayúsculas se ve elegante
                         letterSpacing: '1px',
-                        opacity: 0.9,
-                        transition: 'opacity 0.2s'
+                        opacity: 1,
+
                     }}
-                    // Efecto hover simple para que se ilumine al pasar el mouse
-                    onMouseOver={(e) => e.target.style.opacity = '1'}
-                    onMouseOut={(e) => e.target.style.opacity = '0.9'}
                 >
                     Salir
                 </button>

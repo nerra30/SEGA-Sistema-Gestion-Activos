@@ -17,7 +17,11 @@ let mockEquipos = [
     { id: 1, nombre: "Laptop Dell Latitude", serial: "DELL-001", estado: 1, categoriaId: 1, categoria: { nombre: "Cómputo" } },
     { id: 2, nombre: "Proyector Epson", serial: "EPSON-X", estado: 2, categoriaId: 2, categoria: { nombre: "Audiovisual" } },
     { id: 3, nombre: "MacBook Air", serial: "MAC-005", estado: 3, categoriaId: 1, categoria: { nombre: "Cómputo" } },
-    { id: 4, nombre: "Cable HDMI 10m", serial: "CAB-001", estado: 1, categoriaId: 3, categoria: { nombre: "Accesorios" } }
+    { id: 4, nombre: "Cable USB", serial: "CAB-002", estado: 1, categoriaId: 3, categoria: { nombre: "Accesorios" } },
+    { id: 5, nombre: "Mouse", serial: "Acc-001", estado: 1, categoriaId: 1, categoria: { nombre: "Accesorios" } },
+    { id: 6, nombre: "Impresora HP", serial: "HP 500", estado: 1, categoriaId: 2, categoria: { nombre: "Audiovisual" } },
+    { id: 7, nombre: "MacBook Pro", serial: "MAC-100", estado: 1, categoriaId: 1, categoria: { nombre: "Cómputo" } },
+    { id: 8, nombre: "Teclado", serial: "hp-007", estado: 1, categoriaId: 3, categoria: { nombre: "Accesorios" } }
 ];
 
 let mockUsuarios = [
@@ -32,8 +36,8 @@ let mockPrestamos = [
         equipo: { nombre: "Proyector Epson" }, usuario: { nombreCompleto: "María Estudiante" }
     },
     {
-        id: 102, equipoId: 3, usuarioId: 2, fechaSolicitud: "2023-10-10", fechaLimite: "2023-10-12", estado: 1,
-        equipo: { nombre: "MacBook Air" }, usuario: { nombreCompleto: "Juan Pérez" }
+        id: 102, equipoId: 3, usuarioId: 3, fechaSolicitud: "2023-10-10", fechaLimite: "2026-10-12", estado: 1,
+        equipo: { nombre: "MacBook Air" }, usuario: { nombreCompleto: "María Estudiante" }
     }
 ];
 
@@ -150,7 +154,7 @@ export const eliminarEquipo = async (id) => {
 
 // --- PRÉSTAMOS ---
 export const getPrestamos = async () => {
-    if (MODO_SIMULACION) return simularRed(mockPrestamos);
+    if (MODO_SIMULACION) return simularRed([...mockPrestamos]);
     return (await fetch(`${API_URL}/prestamos`)).json();
 };
 
@@ -170,8 +174,22 @@ export const crearSolicitud = async (solicitud) => {
 
 export const gestionarEstadoPrestamo = async (id, estado) => {
     if (MODO_SIMULACION) {
-        const p = mockPrestamos.find(pr => pr.id === id);
-        if (p) p.estado = estado;
+        const prestamo = mockPrestamos.find(pr => pr.id === id);
+        if (prestamo) {
+            prestamo.estado = estado; // Actualizamos el préstamo
+
+            // Sincronizar el estado del equipo
+            // Si aprobamos (2), el equipo pasa a Prestado (2)
+            if (estado === 2) {
+                const equipo = mockEquipos.find(e => e.id === prestamo.equipoId);
+                if (equipo) equipo.estado = 2;
+            }
+            // Si rechazamos (4), el equipo se libera (1) por si acaso estaba reservado
+            if (estado === 4) {
+                const equipo = mockEquipos.find(e => e.id === prestamo.equipoId);
+                if (equipo) equipo.estado = 1;
+            }
+        }
         return simularRed({ ok: true });
     }
     return fetch(`${API_URL}/prestamos/${id}/estado`, { method: "PUT", headers: headersConfig, body: JSON.stringify({ estado }) });
@@ -201,6 +219,15 @@ export const solicitarRenovacion = async (id) => {
 };
 
 export const notificarDevolucion = async (id, nota) => {
-    if (MODO_SIMULACION) return simularRed({ ok: true });
+    if (MODO_SIMULACION) {
+        // Buscamos el préstamo 
+        const p = mockPrestamos.find(pr => pr.id === id);
+
+        if (p) {
+            // Guardamos la nota en el objeto
+            p.notaDevolucion = nota;
+        }
+        return simularRed({ ok: true });
+    }
     return fetch(`${API_URL}/prestamos/${id}/notificar`, { method: "PUT", headers: headersConfig, body: JSON.stringify({ nota }) });
 };

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using SEGA.server.Datos;
+using SEGA.Server.Datos;
 
 #nullable disable
 
@@ -24,7 +24,7 @@ namespace SEGA.Server.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("SEGA.server.Modelos.Equipo", b =>
+            modelBuilder.Entity("SEGA.Server.Modelos.Equipo", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()

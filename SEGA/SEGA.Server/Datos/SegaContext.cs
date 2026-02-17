@@ -1,13 +1,20 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using SEGA.server.Modelos;
+using SEGA.Server.Modelos;
 
-namespace SEGA.server.Datos
+namespace SEGA.Server.Datos
 {
     public class SegaContext : DbContext
     {
         public SegaContext(DbContextOptions<SegaContext> options) : base(options) { }
 
-        // Esta línea le dice a C# que cree una tabla llamada "Equipos"
         public DbSet<Equipo> Equipos { get; set; }
+
+        public DbSet<Prestamo> Prestamos { get; set; }
+
+        public DbSet<Rol> Roles { get; set; }
+
+        public DbSet<Usuario> Usuarios { get; set; }
+
+        public DbSet<Categoria> Categorias { get; set; }
     }
 }

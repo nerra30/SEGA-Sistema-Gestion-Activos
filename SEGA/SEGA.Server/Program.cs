@@ -16,7 +16,7 @@ builder.Services.AddCors(options =>
 });
 
 // Agregar Entity Framework y SQL Server
-builder.Services.AddDbContext<SEGA.server.Datos.SegaContext>(options =>
+builder.Services.AddDbContext<SEGA.Server.Datos.SegaContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("CadenaConexionDefault")));
 
 builder.Services.AddControllers();
