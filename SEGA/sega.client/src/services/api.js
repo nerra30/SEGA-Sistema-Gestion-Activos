@@ -158,66 +158,96 @@ export const getPrestamos = async () => {
     return (await fetch(`${API_URL}/prestamos`)).json();
 };
 
-export const crearSolicitud = async (solicitud) => {
+export const crearSolicitud = async (solicitud, dias) => {
     if (MODO_SIMULACION) {
+        // 1. Agregar el préstamo
         mockPrestamos.push({
             id: Math.floor(Math.random() * 1000),
             ...solicitud,
+            diasSolicitados: dias ? parseInt(dias) : 3, // Aca guardamos los dias
             estado: 1, // Pendiente
             equipo: mockEquipos.find(e => e.id === solicitud.equipoId) || { nombre: "Equipo Simulado" },
-            usuario: { nombreCompleto: "Usuario Actual" } // Simplificado
+            usuario: { nombreCompleto: "Usuario Actual" }
         });
+
+        // 2. Cambiamos el estado del equipo a "Prestado" (2) inmediatamente 
+        // para que nadie más lo pida mientras está pendiente.
+        const equipo = mockEquipos.find(e => e.id === solicitud.equipoId);
+        if (equipo) equipo.estado = 2; // Lo marcamos como no disponible
+
         return simularRed({ ok: true });
     }
-    return fetch(`${API_URL}/prestamos`, { method: "POST", headers: headersConfig, body: JSON.stringify(solicitud) });
+    return fetch(`${API_URL}/prestamos`, { method: "POST", headers: headersConfig, body: JSON.stringify(solicitud,dias) });
 };
 
-export const gestionarEstadoPrestamo = async (id, estado) => {
+export const gestionarEstadoPrestamo = async (id, estado, nuevaFecha = null) => {
     if (MODO_SIMULACION) {
-        const prestamo = mockPrestamos.find(pr => pr.id === id);
-        if (prestamo) {
-            prestamo.estado = estado; // Actualizamos el préstamo
+        const p = mockPrestamos.find(pr => pr.id === id);
 
-            // Sincronizar el estado del equipo
+        if (p) {
+            p.estado = estado; // Actualizamos estado
+
+            // ¡ESTA ES LA CLAVE! Si llega una fecha nueva, la guardamos
+            if (nuevaFecha) {
+                p.fechaLimite = nuevaFecha;
+            }
+
+            // Sincronizar equipo (lógica visual)
             // Si aprobamos (2), el equipo pasa a Prestado (2)
             if (estado === 2) {
-                const equipo = mockEquipos.find(e => e.id === prestamo.equipoId);
-                if (equipo) equipo.estado = 2;
+                const eq = mockEquipos.find(e => e.id === p.equipoId);
+                if (eq) eq.estado = 2;
             }
             // Si rechazamos (4), el equipo se libera (1) por si acaso estaba reservado
             if (estado === 4) {
-                const equipo = mockEquipos.find(e => e.id === prestamo.equipoId);
+                const equipo = mockEquipos.find(e => e.id === p.equipoId);
                 if (equipo) equipo.estado = 1;
             }
         }
         return simularRed({ ok: true });
     }
-    return fetch(`${API_URL}/prestamos/${id}/estado`, { method: "PUT", headers: headersConfig, body: JSON.stringify({ estado }) });
+    // Backend Real
+    return fetch(`${API_URL}/prestamos/${id}/estado`, {
+        method: "PUT",
+        headers: headersConfig,
+        body: JSON.stringify({ estado, fechaLimite: nuevaFecha })
+    });
 };
 
 export const finalizarPrestamo = async (id, estadoEquipo) => {
     if (MODO_SIMULACION) {
         const p = mockPrestamos.find(pr => pr.id === id);
         if (p) {
-            p.estado = 3; // Finalizado
-            // Actualizar estado del equipo simulado
+            p.estado = 3; // Finalizado en el historial de préstamos
+
+            // Actualizar el equipo real
             const eq = mockEquipos.find(e => e.id === p.equipoId);
-            if (eq) eq.estado = estadoEquipo; // 1: Bueno, 3: Malo
+            if (eq) {
+                // Si el equipo volvió bien (1), queda Disponible (1)
+                // Si volvió dañado (3), queda en Mantenimiento (3)
+                eq.estado = estadoEquipo === 1 ? 1 : 3;
+            }
         }
         return simularRed({ ok: true });
     }
     return fetch(`${API_URL}/prestamos/${id}/finalizar`, { method: "PUT", headers: headersConfig, body: JSON.stringify({ estadoEquipo }) });
 };
 
-export const solicitarRenovacion = async (id) => {
+// Solicitar Renovacióm
+export const solicitarRenovacion = async (id, dias) => {
     if (MODO_SIMULACION) {
         const p = mockPrestamos.find(pr => pr.id === id);
-        if (p) p.estado = 5; // En renovación
+        if (p) {
+            p.estado = 5; // En renovación
+            p.diasSolicitados = parseInt(dias); // aca se guarda los dias
+        }
         return simularRed({ ok: true });
     }
-    return fetch(`${API_URL}/prestamos/${id}/renovar`, { method: "PUT" });
+    return fetch(`${API_URL}/prestamos/${id}/renovar`, { method: "PUT", body: JSON.stringify({ dias }) });
 };
 
+
+// Notificar Devolución
 export const notificarDevolucion = async (id, nota) => {
     if (MODO_SIMULACION) {
         // Buscamos el préstamo 
