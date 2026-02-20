@@ -1,4 +1,4 @@
-﻿namespace SEGA.server.Modelos
+﻿namespace SEGA.Server.Modelos
 {
     public enum EstadoEquipoEnum
     {

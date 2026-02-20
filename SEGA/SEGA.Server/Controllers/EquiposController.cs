@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SEGA.server.Datos;
-using SEGA.server.Modelos;
+using SEGA.Server.Datos;
+using SEGA.Server.Modelos;
 
 namespace SEGA.Server.Controllers
 {

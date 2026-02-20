@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace SEGA.server.Modelos
+namespace SEGA.Server.Modelos
 {
     public class Equipo
     {
@@ -15,7 +16,10 @@ namespace SEGA.server.Modelos
         [MaxLength(50)]
         public string Serial { get; set; } = string.Empty;
 
-        // Aquí usamos el Enum que creamos arriba
         public EstadoEquipoEnum Estado { get; set; } = EstadoEquipoEnum.Disponible;
+
+        public int? CategoriaId { get; set; }
+        [ForeignKey("CategoriaId")]
+        public virtual Categoria? Categoria { get; set; }
     }
 }
