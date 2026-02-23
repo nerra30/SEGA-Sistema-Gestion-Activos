@@ -5,7 +5,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 
 // =============================================
-// IMPORTACIÓN DE VISTAS (PÁGINAS)
+// IMPORTACIÓN DE VISTAS
 // =============================================
 import SolicitarPrestamo from './pages/SolicitarPrestamo';
 import MisPrestamos from './pages/MisPrestamos';
