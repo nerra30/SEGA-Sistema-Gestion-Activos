@@ -1,25 +1,20 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.Text.Json.Serialization;
 
 namespace SEGA.Server.Modelos
 {
     public class Equipo
     {
-        [Key]
         public int Id { get; set; }
-
-        [Required] // Obligatorio
-        [MaxLength(100)]
-        public string Nombre { get; set; } = string.Empty;
-
-        [Required]
-        [MaxLength(50)]
-        public string Serial { get; set; } = string.Empty;
-
-        public EstadoEquipoEnum Estado { get; set; } = EstadoEquipoEnum.Disponible;
+        public string Nombre { get; set; } = null!;
+        public string Serial { get; set; } = null!;
+        public int Estado { get; set; } = 1;
 
         public int? CategoriaId { get; set; }
-        [ForeignKey("CategoriaId")]
-        public virtual Categoria? Categoria { get; set; }
+
+        // Navegación
+        public Categoria? Categoria { get; set; }
+
+        [JsonIgnore]
+        public ICollection<Prestamo>? Prestamos { get; set; }
     }
 }

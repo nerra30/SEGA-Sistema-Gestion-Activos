@@ -1,8 +1,8 @@
-﻿// INTERRUPTOR DE MODO (true = Usa datos en memoria para pruebas, false = Conecta al backend en C#)
-const MODO_SIMULACION = true;
+﻿// interruptor de pruebas (true = Usa datos en memoria para pruebas, false = Conecta al backend en C#)
+const MODO_SIMULACION = false;
 
 // URL base para el backend real
-const API_URL = "https://localhost:7164/api";
+const API_URL = "https://localhost:56690/api";
 const headersConfig = { "Content-Type": "application/json; charset=UTF-8" };
 
 // ==========================================
@@ -221,7 +221,7 @@ export const crearSolicitud = async (solicitud, dias) => {
 
 /**
  * Función que usa el Gestor para aprobar (2) o rechazar (4) préstamos o renovaciones.
- * También recalcula fechas límites cuando aprueba extensiones.
+ * También recalcula fechas límites cuando aprueba extensiones de prestamos.
  */
 export const gestionarEstadoPrestamo = async (id, estado, nuevaFecha = null) => {
     if (MODO_SIMULACION) {
