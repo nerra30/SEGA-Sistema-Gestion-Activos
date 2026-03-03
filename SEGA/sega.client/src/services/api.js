@@ -2,7 +2,7 @@
 const MODO_SIMULACION = false;
 
 // URL base para el backend real
-const API_URL = "https://localhost:56690/api";
+const API_URL = "https://localhost:7164/api";
 const headersConfig = { "Content-Type": "application/json; charset=UTF-8" };
 
 // ==========================================
@@ -98,6 +98,26 @@ export const eliminarUsuario = async (id) => {
         return simularRed({ ok: true });
     }
     return fetch(`${API_URL}/usuarios/${id}`, { method: "DELETE" });
+};
+
+export const loginUsuario = async (email, password) => {
+    if (MODO_SIMULACION) {
+        // Modo prueba: Busca en el arreglo local
+        const user = mockUsuarios.find(u => u.email === email && u.password === password);
+        if (user) return simularRed(user);
+        throw new Error("Credenciales inválidas");
+    }
+
+    // Modo Producción: Llama al nuevo endpoint de C#
+    const response = await fetch(`${API_URL}/usuarios/login`, {
+        method: "POST",
+        headers: headersConfig,
+        body: JSON.stringify({ email, password })
+    });
+
+    if (!response.ok) throw new Error("Credenciales incorrectas");
+
+    return await response.json(); // Devuelve el usuario validado
 };
 
 // --- CRUD CATEGORÍAS ---
@@ -290,11 +310,11 @@ export const solicitarRenovacion = async (id, dias) => {
         const p = mockPrestamos.find(pr => pr.id === id);
         if (p) {
             p.estado = 5; // Pasa a estado 5 (En Renovación)
-            p.diasSolicitados = parseInt(dias); // Se guardan los días para que el Gestor los dictamine
+            p.diasSolicitados = parseInt(dias); // Se guardan los días para que el Gestor los revise
         }
         return simularRed({ ok: true });
     }
-    return fetch(`${API_URL}/prestamos/${id}/renovar`, { method: "PUT", body: JSON.stringify({ dias }) });
+    return fetch(`${API_URL}/prestamos/${id}/renovar`, { method: "PUT", headers: headersConfig, body: JSON.stringify({ dias }) });
 };
 
 /**

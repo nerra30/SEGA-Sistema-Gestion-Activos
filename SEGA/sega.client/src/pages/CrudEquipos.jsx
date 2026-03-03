@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react';
+﻿import Swal from 'sweetalert2';
+import { useEffect, useState } from 'react';
 import { getEquipos, getCategorias, crearEquipo, actualizarEquipo, eliminarEquipo } from '../services/api';
 
 /**
@@ -54,24 +55,39 @@ function CrudEquipos() {
     const guardar = async (e) => {
         e.preventDefault();
 
-        // Validación básica de campos obligatorios
-        if (!form.nombre || !form.serial) return alert("Nombre y Serial son obligatorios");
+        // Validación básica de campos obligatorios con SweetAlert
+        if (!form.nombre || !form.serial) {
+            Swal.fire('Atención', 'Nombre y Serial son obligatorios', 'warning');
+            return;
+        }
 
         try {
             if (modoEdicion) {
                 // Actualiza un equipo existente
                 await actualizarEquipo(form.id, form);
-                alert("✅ Equipo actualizado correctamente");
+                Swal.fire({
+                    title: '¡Actualizado!',
+                    text: 'Equipo actualizado correctamente',
+                    icon: 'success',
+                    confirmButtonColor: '#107C10',
+                    timer: 2000
+                });
             } else {
                 // Crea un equipo nuevo
                 await crearEquipo(form);
-                alert("✅ Equipo creado correctamente");
+                Swal.fire({
+                    title: '¡Creado!',
+                    text: 'Equipo creado correctamente',
+                    icon: 'success',
+                    confirmButtonColor: '#107C10',
+                    timer: 2000
+                });
             }
             // Después de guardar, limpiamos pantalla y recargamos la lista
             limpiarFormulario();
             cargarDatos();
         } catch (error) {
-            alert("❌ Error al guardar. Revisa que el serial no esté repetido.");
+            Swal.fire('Error', 'Error al guardar. Revisa que el serial no esté repetido.', 'error');
         }
     };
 
@@ -89,15 +105,32 @@ function CrudEquipos() {
 
     // Borra un equipo de la base de datos
     const eliminar = async (id) => {
-        // Barrera de seguridad para evitar clics accidentales
-        if (!window.confirm("¿Estás seguro de eliminar este equipo?")) return;
+        // Reemplazo del confirm con el formato exacto acordado
+        const confirmacion = await Swal.fire({
+            title: '¿Estás seguro de eliminar este registro?',
+            text: "No podrás revertir esta acción.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d13438',
+            cancelButtonColor: '#666',
+            confirmButtonText: 'Eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (!confirmacion.isConfirmed) return;
 
         try {
             await eliminarEquipo(id);
-            alert("Exito! El equipo fue eliminado correctamente");
+            Swal.fire({
+                title: '¡Eliminado!',
+                text: 'El equipo fue eliminado correctamente',
+                icon: 'success',
+                confirmButtonColor: '#107C10',
+                timer: 2000
+            });
             cargarDatos(); // Refrescamos la tabla para ocultar el eliminado
         } catch (error) {
-            alert("❌ No se puede eliminar posiblemente tiene préstamos activos.");
+            Swal.fire('Error', 'No se puede eliminar, posiblemente tiene préstamos activos.', 'error');
         }
     };
 

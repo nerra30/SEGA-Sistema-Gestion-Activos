@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react';
+﻿import Swal from 'sweetalert2';
+import { useEffect, useState } from 'react';
 import { getPrestamos, gestionarEstadoPrestamo, finalizarPrestamo } from '../services/api';
 
 /**
@@ -14,28 +15,25 @@ function GestionPrestamos() {
     // Filtro activo para la vista de la tabla. Por defecto oculta el historial pasado.
     const [filtro, setFiltro] = useState('Vigentes');
 
-    // Estados para controlar el Modal (ventanita emergente) de recepción de equipos
-    const [modalVisible, setModalVisible] = useState(false);
-    const [prestamoSeleccionado, setPrestamoSeleccionado] = useState(null);
-
     // Cargar los préstamos al montar el componente
     useEffect(() => { cargar(); }, []);
 
     const cargar = async () => {
-        const data = await getPrestamos();
-        setPrestamos(data);
+        try {
+            const data = await getPrestamos();
+            setPrestamos(data);
+        } catch (error) {
+            console.error("Error al cargar los préstamos:", error);
+        }
     };
 
     // =============================================
     // LÓGICA DE DASHBOARD (Contadores en tiempo real)
     // =============================================
-    // Se recalculan automáticamente cada vez que cambia el estado 'prestamos'
     const contadores = {
         pendientes: prestamos.filter(p => p.estado === 1).length,
         activos: prestamos.filter(p => p.estado === 2).length,
         vencidos: prestamos.filter(p => {
-            // Un préstamo está vencido si su estado es 2 (Activo) 
-            // y su fecha límite es menor a la fecha de hoy.
             const fecha = new Date(p.fechaLimite);
             return p.estado === 2 && !isNaN(fecha) && fecha < new Date();
         }).length,
@@ -55,78 +53,103 @@ function GestionPrestamos() {
         if (aprobar) {
             nuevoEstado = 2; // Pasa a estado "Activo" (En Préstamo)
 
-            // Validamos los días solicitados. Si viene corrupto (NaN), asignamos 3 días por defecto.
             const diasRaw = parseInt(prestamoActual.diasSolicitados);
             const diasExtra = isNaN(diasRaw) ? 3 : diasRaw;
 
-            // Solo calculamos una nueva fecha si es una Solicitud Nueva (1) o Renovación (5)
             if (prestamoActual.estado === 1 || prestamoActual.estado === 5) {
-                const fechaBase = new Date(); // Fecha de hoy
-                fechaBase.setDate(fechaBase.getDate() + diasExtra); // Sumamos los días solicitados
-                nuevaFechaIso = fechaBase.toISOString(); // Convertimos a formato estándar para la BD
+                const fechaBase = new Date();
+                fechaBase.setDate(fechaBase.getDate() + diasExtra);
+                nuevaFechaIso = fechaBase.toISOString();
 
-                // Alertas de éxito específicas según lo que se aprobó
+                // Notificaciones de éxito de SweetAlert
                 if (prestamoActual.estado === 1) {
-                    alert(`✅ Solicitud aprobada exitosamente por ${diasExtra} días.`);
+                    Swal.fire({ title: '¡Aprobada!', text: `Solicitud aprobada exitosamente por ${diasExtra} días.`, icon: 'success', timer: 2500, confirmButtonColor: '#107C10' });
                 } else if (prestamoActual.estado === 5) {
-                    alert(`✅ Renovación aprobada. El tiempo se extendió por ${diasExtra} días adicionales.`);
+                    Swal.fire({ title: '¡Renovada!', text: `El tiempo se extendió por ${diasExtra} días adicionales.`, icon: 'success', timer: 2500, confirmButtonColor: '#107C10' });
                 }
             }
         } else {
-            // Lógica de Rechazo
+            // Lógica de Rechazo con SweetAlert
             if (prestamoActual.estado === 5) {
-                nuevoEstado = 2; // Si rechazan la renovación, el préstamo vuelve a estar activo normal
-                alert("❌ La renovación ha sido rechazada. El préstamo vuelve a estar Activo con su fecha original.");
+                nuevoEstado = 2;
+                Swal.fire({ title: 'Rechazada', text: 'La renovación ha sido rechazada. El préstamo vuelve a estar Activo con su fecha original.', icon: 'info', confirmButtonColor: '#0078D4' });
             } else {
-                nuevoEstado = 4; // Rechazo de solicitud nueva
-                alert("❌ La solicitud de préstamo ha sido rechazada.");
+                nuevoEstado = 4;
+                Swal.fire({ title: 'Rechazada', text: 'La solicitud de préstamo ha sido rechazada.', icon: 'warning', confirmButtonColor: '#d13438' });
             }
         }
 
-        // Enviamos los cambios al backend y recargamos
-        await gestionarEstadoPrestamo(id, nuevoEstado, nuevaFechaIso);
-        cargar();
-    };
-
-    // =============================================
-    // MODAL DE DEVOLUCIÓN
-    // =============================================
-    // Prepara los datos y abre la ventana para evaluar en qué estado vuelve el equipo
-    const abrirModalRecepcion = (prestamo) => {
-        setPrestamoSeleccionado(prestamo);
-        setModalVisible(true);
-    };
-
-    // Ejecuta el cierre del préstamo dependiendo de la revisión física del equipo
-    const confirmarRecepcion = async (buenEstado) => {
-        if (!prestamoSeleccionado) return;
-
-        // Mandamos 1 (Disponible) si volvió bien, o 3 (Mantenimiento) si volvió mal
-        await finalizarPrestamo(prestamoSeleccionado.id, buenEstado ? 1 : 3);
-
-        if (buenEstado) {
-            alert("✅ Equipo recibido en buen estado. El equipo vuelve a estar disponible.");
-        } else {
-            alert("⚠️ Equipo recibido en mal estado. El equipo se envía a Mantenimiento.");
+        try {
+            await gestionarEstadoPrestamo(id, nuevoEstado, nuevaFechaIso);
+            cargar();
+        } catch (error) {
+            Swal.fire('Error', 'No se pudo procesar la solicitud con el servidor.', 'error');
         }
+    };
 
-        // Limpiamos y cerramos modal
-        setModalVisible(false);
-        setPrestamoSeleccionado(null);
-        cargar();
+    // =============================================
+    // MODAL DE DEVOLUCIÓN (Construido con SweetAlert HTML)
+    // =============================================
+    const handleRecepcion = async (prestamo) => {
+        // Usamos la inyección HTML de SweetAlert para crear el diseño del ticket
+        const notaHTML = prestamo.notaDevolucion || "El usuario no dejó ningún comentario.";
+
+        const result = await Swal.fire({
+            title: 'Recepción de Equipo',
+            html: `
+                <div style="text-align: left; background: #f3f2f1; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 14px;">
+                    <p style="margin: 0 0 10px 0;"><strong>Equipo:</strong> ${prestamo.equipo?.nombre}</p>
+                    <p style="margin: 0 0 10px 0;"><strong>Usuario:</strong> ${prestamo.usuario?.nombreCompleto}</p>
+                    <hr style="border: 0; border-top: 1px solid #ccc; margin: 10px 0;" />
+                    <p style="margin: 0 0 5px 0;"><strong>Nota del Usuario:</strong></p>
+                    <div style="background: white; padding: 10px; border-radius: 4px; border: 1px solid #ccc; font-style: italic; color: #555;">
+                        ${notaHTML}
+                    </div>
+                </div>
+                <p style="margin-bottom: 0;">¿En qué estado se recibe el equipo?</p>
+            `,
+            showCancelButton: true,
+            showDenyButton: true,
+            confirmButtonColor: '#107C10',   // Verde para Buen Estado
+            denyButtonColor: '#d13438',      // Rojo para Mal Estado
+            cancelButtonColor: '#666',       // Gris para Cancelar
+            confirmButtonText: 'Buen Estado',
+            denyButtonText: 'Mal Estado',
+            cancelButtonText: 'Cancelar',
+            width: '500px'
+        });
+
+        // isConfirmed = Clic en Buen Estado | isDenied = Clic en Mal Estado
+        if (result.isConfirmed || result.isDenied) {
+            const buenEstado = result.isConfirmed;
+
+            try {
+                // Mandamos 1 (Disponible) si volvió bien, o 3 (Mantenimiento) si volvió mal
+                await finalizarPrestamo(prestamo.id, buenEstado ? 1 : 3);
+
+                if (buenEstado) {
+                    Swal.fire({ title: '¡Recibido!', text: 'El equipo vuelve a estar disponible en el inventario.', icon: 'success', timer: 2500, confirmButtonColor: '#107C10' });
+                } else {
+                    Swal.fire({ title: '¡Atención!', text: 'El equipo se ha enviado a Mantenimiento.', icon: 'warning', timer: 3000, confirmButtonColor: '#d13438' });
+                }
+                cargar();
+            } catch (error) {
+                Swal.fire('Error', 'No se pudo registrar la recepción del equipo.', 'error');
+            }
+        }
     };
 
     // =============================================
     // FILTRADO DE LA TABLA
     // =============================================
-    // Devuelve una nueva lista basada en el menú desplegable de "Filtrar por"
     const prestamosFiltrados = prestamos.filter(p => {
-        if (filtro === 'Vigentes') return p.estado === 1 || p.estado === 2 || p.estado === 5;
+        if (filtro === 'Vigentes') return p.estado === 1 || p.estado === 2 || p.estado === 5 || p.estado === 6;
         if (filtro === 'Pendientes') return p.estado === 1;
         if (filtro === 'Activos') return p.estado === 2;
         if (filtro === 'Finalizado') return p.estado === 3;
         if (filtro === 'Rechazado') return p.estado === 4;
         if (filtro === 'Renovacion') return p.estado === 5;
+        if (filtro === 'Devolucion') return p.estado === 6;
         if (filtro === 'Todos') return true;
         return true;
     });
@@ -152,6 +175,7 @@ function GestionPrestamos() {
                     <option value="Activos">Préstamos Activos</option>
                     <option value="Renovacion">Solicitudes Renovación</option>
                     <option value="Finalizado">Préstamos Finalizados</option>
+                    <option value="Devolucion">Solicitudes Devolución</option>
                     <option value="Rechazado">Préstamos Rechazados</option>
                     <option value="Todos">Ver todos</option>
                 </select>
@@ -170,7 +194,6 @@ function GestionPrestamos() {
                 </thead>
                 <tbody>
                     {prestamosFiltrados.map(p => {
-                        // Lógica visual específica para cada fila (Vencimientos y Días)
                         const fechaObj = new Date(p.fechaLimite);
                         const isFechaValida = !isNaN(fechaObj);
                         const isVencido = p.estado === 2 && isFechaValida && fechaObj < new Date();
@@ -187,14 +210,14 @@ function GestionPrestamos() {
                                     {p.estado === 2 && <span style={badgeStyle('#dff6dd', '#107C10')}>En Préstamo</span>}
                                     {p.estado === 3 && <span style={badgeStyle('#f3f2f1', '#a19f9d')}>Finalizado</span>}
                                     {p.estado === 4 && <span style={badgeStyle('#fee', '#d13438')}>Rechazado</span>}
-                                    {p.estado === 5 && <span style={badgeStyle('#e1dfdd', '#333')}>En Renovación</span>}
+                                    {p.estado === 5 && <span style={badgeStyle('#e1f0fa', '#0078D4')}>En Renovación</span>}
+                                    {p.estado === 6 && <span style={badgeStyle('#ffdab9', '#d83b01')}>En Devolución</span>}
                                 </td>
 
                                 {/* COLUMNA INFO EXTRA: Avisos importantes para el gestor */}
                                 <td style={{ textAlign: 'center', verticalAlign: 'middle' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
 
-                                        {/* Muestra cuántos días pide el usuario en solicitudes nuevas/renovaciones */}
                                         {(p.estado === 1 || p.estado === 5) && diasSolicitadosValidos && (
                                             <span style={{
                                                 background: '#e1f0fa', color: '#0078D4', fontWeight: 'bold',
@@ -204,7 +227,6 @@ function GestionPrestamos() {
                                             </span>
                                         )}
 
-                                        {/* Alerta roja intermitente o estática si el préstamo ya caducó */}
                                         {isVencido && (
                                             <span style={{
                                                 background: '#fde7d9', color: '#d13438', fontWeight: 'bold',
@@ -214,29 +236,24 @@ function GestionPrestamos() {
                                             </span>
                                         )}
 
-                                        {/* Alerta técnica si la fecha guardada en BD está corrupta */}
                                         {p.estado === 2 && !isFechaValida && (
                                             <span style={{ fontSize: '10px', color: 'red' }}>Fecha inválida</span>
                                         )}
 
-                                        {/* Si el alumno dejó una nota al devolver por su cuenta, se muestra aquí */}
-                                        {p.notaDevolucion && (
-                                            <div title={p.notaDevolucion} style={{ maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '12px', color: '#555', cursor: 'help' }}>
+                                        {p.notaDevolucion && !p.notaDevolucion.startsWith("RENOVACION:") && (
+                                            <div title={p.notaDevolucion} style={{ maxWidth: '300px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '12px', color: '#555', cursor: 'help', fontStyle: 'italic', background: '#f3f2f1', padding: '2px 6px', borderRadius: '4px' }}>
                                                 {p.notaDevolucion}
                                             </div>
                                         )}
 
-                                        {/* Relleno visual si no hay alertas que mostrar */}
                                         {!isVencido && !p.notaDevolucion && p.estado !== 1 && p.estado !== 5 && (
                                             <span style={{ color: '#ccc', fontSize: '12px' }}>--</span>
                                         )}
                                     </div>
                                 </td>
 
-                                {/* COLUMNA BOTONES DE ACCIÓN: Cambian según el estado del préstamo */}
+                                {/* COLUMNA BOTONES DE ACCIÓN */}
                                 <td style={{ textAlign: 'center' }}>
-
-                                    {/* Botones Aprobar/Rechazar para Solicitudes Nuevas o Renovaciones */}
                                     {(p.estado === 1 || p.estado === 5) && (
                                         <>
                                             <button onClick={() => procesarSolicitud(p.id, true)} style={btnVerde} title="Aprobar">✅</button>
@@ -244,9 +261,8 @@ function GestionPrestamos() {
                                         </>
                                     )}
 
-                                    {/* Botón de Recibir Equipo cuando está en préstamo */}
-                                    {p.estado === 2 && (
-                                        <button onClick={() => abrirModalRecepcion(p)} style={btnAzul} title='Recibir Equipo'>📥</button>
+                                    {(p.estado === 2 || p.estado === 6) && (
+                                        <button onClick={() => handleRecepcion(p)} style={btnAzul} title='Recibir Equipo'>📥</button>
                                     )}
                                 </td>
                             </tr>
@@ -257,36 +273,6 @@ function GestionPrestamos() {
                     )}
                 </tbody>
             </table>
-
-            {/* =============================================
-                MODAL DE RECEPCIÓN (Flotante)
-            ============================================= */}
-            {modalVisible && prestamoSeleccionado && (
-                <div style={overlayStyle}>
-                    <div style={modalStyle}>
-                        <h3 style={{ marginTop: 0, color: '#0078D4' }}>Recepción de Equipo</h3>
-                        <div style={{ background: '#f3f2f1', padding: '15px', borderRadius: '8px', marginBottom: '20px', textAlign: 'left' }}>
-                            <p><strong>Equipo:</strong> {prestamoSeleccionado.equipo?.nombre}</p>
-                            <p><strong>Usuario:</strong> {prestamoSeleccionado.usuario?.nombreCompleto}</p>
-                            <hr style={{ border: '0', borderTop: '1px solid #ccc', margin: '10px 0' }} />
-
-                            {/* Muestra la nota que dejó el usuario, si aplica */}
-                            <p><strong>Nota del Usuario:</strong></p>
-                            <div style={{ background: 'white', padding: '10px', borderRadius: '4px', border: '1px solid #ccc', fontStyle: 'italic', color: '#555' }}>
-                                {prestamoSeleccionado.notaDevolucion || "El usuario no dejó ningún comentario."}
-                            </div>
-                        </div>
-
-                        {/* Botones de dictamen físico del Gestor */}
-                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-                            <button onClick={() => confirmarRecepcion(true)} style={btnGrandeVerde}>Buen Estado</button>
-                            <button onClick={() => confirmarRecepcion(false)} style={btnGrandeNaranja}>Mal Estado</button>
-                        </div>
-
-                        <button onClick={() => setModalVisible(false)} style={btnCerrarModal}>Cancelar</button>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
@@ -301,10 +287,5 @@ const badgeStyle = (bg, color) => ({
 const btnVerde = { marginRight: 5, background: '#107C10', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' };
 const btnRojo = { background: '#d13438', color: 'white', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer' };
 const btnAzul = { background: '#0078D4', color: 'white', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' };
-const overlayStyle = { position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 };
-const modalStyle = { background: 'white', padding: '30px', borderRadius: '8px', width: '90%', maxWidth: '500px', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' };
-const btnGrandeVerde = { background: '#107C10', color: 'white', border: 'none', padding: '15px', borderRadius: '8px', cursor: 'pointer', flex: 1 };
-const btnGrandeNaranja = { background: '#d13438', color: 'white', border: 'none', padding: '15px', borderRadius: '8px', cursor: 'pointer', flex: 1 };
-const btnCerrarModal = { background: 'transparent', border: 'none', color: '#666', marginTop: '15px', cursor: 'pointer', textDecoration: 'underline' };
 
 export default GestionPrestamos;

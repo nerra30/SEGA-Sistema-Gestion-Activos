@@ -15,20 +15,27 @@ namespace SEGA.Server.Modelos
 
         public int Estado { get; set; } = 1;
 
-        // En SQL se llama Observaciones, pero C# y React lo verán como NotaDevolucion
         [Column("Observaciones")]
         public string? NotaDevolucion { get; set; }
 
-        // React necesita "diasSolicitados" para mostrarlo en el frontend, 
-        // pero no existe en SQL. Lo calculamos en tiempo real con [NotMapped].
         [NotMapped]
         public int DiasSolicitados
         {
             get
             {
+                // Si se pidió renovación, extraemos los días de la nota
+                if (Estado == 5 && !string.IsNullOrEmpty(NotaDevolucion) && NotaDevolucion.StartsWith("RENOVACION:"))
+                {
+                    if (int.TryParse(NotaDevolucion.Split(':')[1], out int diasExtra))
+                    {
+                        return diasExtra; // Devuelve los días extra que el Gestor debe aprobar
+                    }
+                }
+
+                // Comportamiento normal: calcula la duración del préstamo original
                 return (FechaLimite - FechaSolicitud).Days;
             }
-            set { /* Necesario para que el JSON lo pueda recibir, aunque no lo guardemos directo en BD */ }
+            set { /* Mantenemos el set vacío para que el JSON deserializer no falle */ }
         }
 
         // Navegación

@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react';
+﻿import Swal from 'sweetalert2';
+import { useEffect, useState } from 'react';
 import { getCategorias, crearCategoria, actualizarCategoria, eliminarCategoria } from '../services/api';
 
 /**
@@ -30,11 +31,12 @@ function CrudCategorias() {
             setCategorias(data);
         } catch (error) {
             console.error("Error cargando categorías:", error);
+            // Opcional: Mostrar error al cargar
+            Swal.fire('Error', 'No se pudieron cargar las categorías', 'error');
         }
     };
 
     // Función genérica para manejar los cambios en cualquier input del formulario.
-    // Utiliza el atributo 'name' del input para saber qué propiedad del objeto 'form' debe actualizar.
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
@@ -43,48 +45,87 @@ function CrudCategorias() {
     const guardar = async (e) => {
         e.preventDefault(); // Evita que la página se recargue por defecto
 
-        if (modoEdicion) {
-            // Si estamos en modo edición, llamamos al endpoint de actualización
-            await actualizarCategoria(form.id, form);
-            alert("Categoría actualizada correctamente");
-        } else {
-            // Si no, llamamos al endpoint de creación
-            await crearCategoria(form);
-            alert("Categoría creada correctamente");
-        }
+        try {
+            if (modoEdicion) {
+                // Modo edición
+                await actualizarCategoria(form.id, form);
+                Swal.fire({
+                    title: '¡Actualizada!',
+                    text: 'Categoría actualizada correctamente',
+                    icon: 'success',
+                    confirmButtonColor: '#107C10',
+                    timer: 2000 // Se cierra solo después de 2 segundos (opcional)
+                });
+            } else {
+                // Modo creación
+                await crearCategoria(form);
+                Swal.fire({
+                    title: '¡Creada!',
+                    text: 'Categoría creada correctamente',
+                    icon: 'success',
+                    confirmButtonColor: '#107C10',
+                    timer: 2000
+                });
+            }
 
-        // Una vez guardado, limpiamos el formulario, salimos del modo edición y recargamos la tabla
-        setForm({ id: 0, nombre: '', descripcion: '' });
-        setModoEdicion(false);
-        cargar();
+            // Limpieza y recarga
+            setForm({ id: 0, nombre: '', descripcion: '' });
+            setModoEdicion(false);
+            cargar();
+        } catch (error) {
+            Swal.fire('Error', 'Ocurrió un problema al guardar la categoría', 'error');
+        }
     };
 
     // Función para preparar el formulario cuando el usuario hace clic en "Editar" en la tabla
     const seleccionarParaEditar = (cat) => {
-        // Copiamos los datos de la fila seleccionada hacia el estado del formulario
         setForm({
             id: cat.id,
             nombre: cat.nombre,
-            descripcion: cat.descripcion || '' // Evita errores si la descripción viene como null de la base de datos
+            descripcion: cat.descripcion || ''
         });
-        setModoEdicion(true); // Cambiamos la interfaz a modo edición
+        setModoEdicion(true);
     };
 
     // Función para eliminar una categoría específica
     const eliminar = async (id) => {
-        // Validación de seguridad obligatoria para evitar borrados accidentales
-        if (!window.confirm("¿Seguro que deseas eliminar esta categoría?")) return;
+        // Reemplazo del window.confirm nativo
+        const confirmacion = await Swal.fire({
+            title: '¿Estás seguro de eliminar este registro?',
+            text: "No podrás revertir esta acción.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d13438',
+            cancelButtonColor: '#666',
+            confirmButtonText: 'Eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (!confirmacion.isConfirmed) return; // Si el usuario cancela, no hacemos nada
 
         try {
             const res = await eliminarCategoria(id);
             if (res.ok) {
-                alert("Exito! categoría eliminada correctamente");
-                cargar(); // Recargamos la tabla para que desaparezca la categoría borrada
+                Swal.fire({
+                    title: '¡Eliminada!',
+                    text: 'La categoría ha sido eliminada.',
+                    icon: 'success',
+                    confirmButtonColor: '#107C10',
+                    timer: 2000
+                });
+                cargar();
             } else {
-                alert("No se puede eliminar, es posible que tenga equipos asociados.");
+                // Reemplazo del alert de error
+                Swal.fire({
+                    title: 'Error',
+                    text: 'No se puede eliminar, es posible que tenga equipos asociados.',
+                    icon: 'error',
+                    confirmButtonColor: '#0078D4'
+                });
             }
         } catch (error) {
             console.error(error);
+            Swal.fire('Error', 'Ocurrió un error inesperado al eliminar', 'error');
         }
     };
 
@@ -97,7 +138,6 @@ function CrudCategorias() {
             ============================================= */}
             <div style={{ background: '#f3f2f1', padding: '20px', borderRadius: '8px', marginBottom: '20px' }}>
 
-                {/* Título dinámico que cambia según el estado 'modoEdicion' */}
                 <h3>{modoEdicion ? '✏️ Editar Categoría' : '➕ Nueva Categoría'}</h3>
 
                 <form onSubmit={guardar} style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', alignItems: 'end' }}>
@@ -126,12 +166,10 @@ function CrudCategorias() {
                     </div>
 
                     <div style={{ display: 'flex', gap: '10px' }}>
-                        {/* Botón de Submit que cambia su texto dinámicamente */}
                         <button type="submit" style={btnGuardar}>
                             {modoEdicion ? 'Actualizar' : 'Crear'}
                         </button>
 
-                        {/* Botón de Cancelar: SOLO se muestra si estamos en modo edición */}
                         {modoEdicion && (
                             <button
                                 type="button"
@@ -161,20 +199,17 @@ function CrudCategorias() {
                     </tr>
                 </thead>
                 <tbody>
-                    {/* Mapeamos el arreglo de categorías para generar una fila por cada elemento */}
                     {categorias.map(c => (
                         <tr key={c.id} style={{ borderBottom: '1px solid #eee' }}>
                             <td style={{ padding: '10px', fontWeight: 'bold' }}>{c.nombre}</td>
                             <td>{c.descripcion}</td>
                             <td style={{ textAlign: 'center' }}>
-                                {/* Botones de acción vinculados a las funciones superiores pasando el objeto o el ID */}
                                 <button onClick={() => seleccionarParaEditar(c)} style={btnEditar} title="Editar">✏️</button>
                                 <button onClick={() => eliminar(c.id)} style={btnEliminar} title="Eliminar">🗑️</button>
                             </td>
                         </tr>
                     ))}
 
-                    {/* Mensaje de fallback por si la base de datos está vacía */}
                     {categorias.length === 0 && (
                         <tr>
                             <td colSpan="3" style={{ padding: '20px', textAlign: 'center', color: '#888' }}>

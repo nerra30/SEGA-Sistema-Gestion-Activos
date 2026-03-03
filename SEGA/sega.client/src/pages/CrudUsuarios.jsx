@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react';
+﻿import Swal from 'sweetalert2';
+import { useEffect, useState } from 'react';
 import { getUsuarios, crearUsuario, actualizarUsuario, eliminarUsuario } from '../services/api';
 
 /**
@@ -52,19 +53,37 @@ function CrudUsuarios() {
     const guardar = async (e) => {
         e.preventDefault(); // Evitamos que la página haga un refresh completo
 
-        // Validación básica: Evitar que guarden usuarios sin nombre o sin correo
-        if (!form.nombreCompleto || !form.email) return alert("Completa los datos obligatorios");
+        // Validación básica con SweetAlert
+        if (!form.nombreCompleto || !form.email) {
+            Swal.fire('Atención', 'Completa los datos obligatorios', 'warning');
+            return;
+        }
 
         try {
             if (modoEdicion) {
                 // Flujo de Edición
                 await actualizarUsuario(form.id, form);
-                alert("Usuario actualizado correctamente");
+                Swal.fire({
+                    title: '¡Actualizado!',
+                    text: 'Usuario actualizado correctamente',
+                    icon: 'success',
+                    confirmButtonColor: '#107C10',
+                    timer: 2000
+                });
             } else {
                 // Flujo de Creación (Exigimos contraseña de forma obligatoria)
-                if (!form.password) return alert("La contraseña es obligatoria");
+                if (!form.password) {
+                    Swal.fire('Atención', 'La contraseña es obligatoria para nuevos usuarios', 'warning');
+                    return;
+                }
                 await crearUsuario(form);
-                alert("Usuario creado correctamente");
+                Swal.fire({
+                    title: '¡Creado!',
+                    text: 'Usuario creado correctamente',
+                    icon: 'success',
+                    confirmButtonColor: '#107C10',
+                    timer: 2000
+                });
             }
 
             // Limpieza del estado del formulario y recarga de la tabla
@@ -72,7 +91,7 @@ function CrudUsuarios() {
             setModoEdicion(false);
             cargar();
         } catch (error) {
-            alert("Error al guardar. Verifica la consola.");
+            Swal.fire('Error', 'Error al guardar. Verifica la consola.', 'error');
         }
     };
 
@@ -82,7 +101,7 @@ function CrudUsuarios() {
             id: usuario.id,
             nombreCompleto: usuario.nombreCompleto,
             email: usuario.email,
-            password: '', // Dejamos la contraseña en blanco por seguridad (se actualiza solo si el admin escribe algo)
+            password: '', // Dejamos la contraseña en blanco por seguridad
             rolId: usuario.rolId
         });
         setModoEdicion(true); // Activamos el modo edición para cambiar textos y botones
@@ -90,16 +109,33 @@ function CrudUsuarios() {
 
     // Función para eliminar a un usuario
     const eliminar = async (id) => {
-        // Confirmación de seguridad en pantalla
-        if (!window.confirm("¿Seguro que deseas eliminar este usuario?")) return;
+        // Confirmación de seguridad con el formato exacto de SweetAlert
+        const confirmacion = await Swal.fire({
+            title: '¿Estás seguro de eliminar este registro?',
+            text: "No podrás revertir esta acción.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d13438',
+            cancelButtonColor: '#666',
+            confirmButtonText: 'Eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (!confirmacion.isConfirmed) return;
 
         try {
             await eliminarUsuario(id);
-            alert("Exito! El usuario fue eliminado correctamente");
+            Swal.fire({
+                title: '¡Eliminado!',
+                text: 'El usuario fue eliminado correctamente',
+                icon: 'success',
+                confirmButtonColor: '#107C10',
+                timer: 2000
+            });
             cargar(); // Refrescamos la tabla
         } catch (error) {
-            // Manejo de errores por restricciones de llave foránea (ej. si el usuario tiene préstamos ligados)
-            alert("❌ No se puede eliminar posiblemente tiene préstamos activos.");
+            // Manejo de errores por restricciones de llave foránea
+            Swal.fire('Error', 'No se puede eliminar, posiblemente tiene préstamos activos.', 'error');
         }
     };
 

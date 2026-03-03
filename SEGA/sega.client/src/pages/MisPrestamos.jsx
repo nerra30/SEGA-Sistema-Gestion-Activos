@@ -1,4 +1,5 @@
-﻿import { useEffect, useState } from 'react';
+﻿import Swal from 'sweetalert2';
+import { useEffect, useState } from 'react';
 import { getPrestamos, solicitarRenovacion, notificarDevolucion } from '../services/api';
 
 /**
@@ -20,53 +21,106 @@ function MisPrestamos({ usuario }) {
 
     // Consulta a la API y filtra la información
     const cargar = async () => {
-        const data = await getPrestamos();
-
-        // FILTRO DE SEGURIDAD LOCAL: 
-        // Nos aseguramos de guardar en el estado SOLO los préstamos donde 
-        // el usuarioId coincida con el ID del usuario que inició sesión.
-        setPrestamos(data.filter(p => p.usuarioId === usuario.id));
+        try {
+            const data = await getPrestamos();
+            // FILTRO DE SEGURIDAD LOCAL
+            setPrestamos(data.filter(p => p.usuarioId === usuario.id));
+        } catch (error) {
+            console.error("Error cargando mis préstamos:", error);
+        }
     };
 
     // Maneja el flujo cuando el usuario quiere extender el tiempo de su préstamo
     const handleRenovar = async (id) => {
-        // Pedimos al usuario la cantidad de días mediante un prompt nativo
-        const diasInput = prompt("¿Por cuántos días deseas renovar el préstamo?\n El tiempo mínimo es de 3 días.", "3");
+        // Modal interactivo para pedir los días
+        const { value: diasInput } = await Swal.fire({
+            title: 'Renovar Préstamo',
+            text: '¿Por cuántos días deseas renovar el préstamo? (Mínimo 3)',
+            input: 'number',
+            inputValue: 3,
+            showCancelButton: true,
+            confirmButtonColor: '#0078D4', // Azul para acciones secundarias/renovaciones
+            cancelButtonColor: '#666',
+            confirmButtonText: 'Solicitar Renovación',
+            cancelButtonText: 'Cancelar',
+            inputValidator: (value) => {
+                if (!value || value < 3) {
+                    return 'Debes solicitar al menos 3 días adicionales';
+                }
+            }
+        });
 
-        if (!diasInput) return; // Si cancela la ventanita, cortamos la ejecución aquí
+        if (!diasInput) return; // Si cancela, cortamos la ejecución
 
-        // Enviamos la petición de renovación a la API
-        await solicitarRenovacion(id, diasInput);
-        alert(`✅ Solicitud enviada por ${diasInput} días. Esperando aprobación del Gestor.`);
-        cargar(); // Recargamos para que el estado cambie a "En Renovación" visualmente
+        try {
+            // Enviamos la petición de renovación a la API
+            await solicitarRenovacion(id, diasInput);
+
+            Swal.fire({
+                title: '¡Solicitud enviada!',
+                text: `Renovación por ${diasInput} días en espera de aprobación del Gestor.`,
+                icon: 'success',
+                confirmButtonColor: '#107C10',
+                timer: 3000
+            });
+
+            cargar(); // Recargamos para que el estado cambie a "En Renovación" visualmente
+        } catch (error) {
+            Swal.fire('Error', 'No se pudo enviar la solicitud de renovación.', 'error');
+        }
     };
 
     // Maneja el flujo cuando el usuario avisa que ya entregó el equipo físicamente
     const handleNotificar = async (id) => {
-        // Pedimos una nota explicativa (útil si lo dejó con otra persona o en otra oficina)
-        const nota = prompt("Ingresa una nota sobre la devolución (ej: 'Lo dejé en recepción')");
+        // Modal con un área de texto (textarea) para notas largas
+        const { value: nota } = await Swal.fire({
+            title: 'Notificar Devolución',
+            text: 'Ingresa una nota sobre la entrega y/o motivo de la devolución',
+            input: 'textarea',
+            inputPlaceholder: 'Ej: Lo dejé en recepción...  Se devuelve por malfuncionamiento...',
+            showCancelButton: true,
+            confirmButtonColor: '#107C10',
+            cancelButtonColor: '#666',
+            confirmButtonText: 'Enviar Notificación',
+            cancelButtonText: 'Cancelar',
+            inputValidator: (value) => {
+                if (!value || value.trim() === '') {
+                    return 'Debes ingresar una nota para poder notificar la devolución';
+                }
+            }
+        });
 
-        if (!nota) return; // Si cancela, no hacemos nada
+        if (!nota) return; // Si cancela
 
-        // Guardamos la nota en la API para que el Gestor la vea en su panel
-        await notificarDevolucion(id, nota);
-        alert("✅ Devolución notificada al encargado.");
-        cargar();
+        try {
+            // Guardamos la nota en la API para que el Gestor la vea en su panel
+            await notificarDevolucion(id, nota);
+
+            Swal.fire({
+                title: '¡Notificada!',
+                text: 'La devolución ha sido notificada al encargado exitosamente.',
+                icon: 'success',
+                confirmButtonColor: '#107C10',
+                timer: 2500
+            });
+
+            cargar();
+        } catch (error) {
+            Swal.fire('Error', 'No se pudo enviar la notificación.', 'error');
+        }
     };
 
     // =============================================
     // LÓGICA DE FILTRADO PARA LA TABLA
     // =============================================
-    // Evalúa el estado 'filtro' y devuelve un nuevo arreglo para renderizar
     const prestamosFiltrados = prestamos.filter(p => {
-        // Vigentes: Muestra todo lo que está fluyendo (Pendiente, Activo, Renovando)
-        if (filtro === 'Vigentes') return p.estado === 1 || p.estado === 2 || p.estado === 5;
+        if (filtro === 'Vigentes') return p.estado === 1 || p.estado === 2 || p.estado === 5 || p.estado === 6;
         if (filtro === 'Pendientes') return p.estado === 1;
         if (filtro === 'Activos') return p.estado === 2;
         if (filtro === 'Renovacion') return p.estado === 5;
-        // Historial: Muestra lo que ya terminó su ciclo
+        if (filtro === 'Devolucion') return p.estado === 6;
         if (filtro === 'Historial') return p.estado === 3 || p.estado === 4;
-
+        if (filtro === 'Todos') return true;
         return true;
     });
 
@@ -74,9 +128,7 @@ function MisPrestamos({ usuario }) {
         <div>
             <h2>Mis Préstamos</h2>
 
-            {/* =============================================
-                INTERFAZ DEL FILTRO
-            ============================================= */}
+            {/* INTERFAZ DEL FILTRO */}
             <div style={{ marginBottom: '15px', background: 'white', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <label style={{ fontWeight: 'bold' }}>Mostrar:</label>
                 <select
@@ -88,13 +140,13 @@ function MisPrestamos({ usuario }) {
                     <option value="Activos">Solo Activos</option>
                     <option value="Pendientes">Solicitudes Pendientes</option>
                     <option value="Renovacion">En Renovación</option>
+                    <option value="Devolucion">En Devolución</option>
                     <option value="Historial">Finalizados / Rechazados</option>
+                    <option value="Todos">Todos</option>
                 </select>
             </div>
 
-            {/* =============================================
-                TABLA DE PRÉSTAMOS DEL USUARIO
-            ============================================= */}
+            {/* TABLA DE PRÉSTAMOS DEL USUARIO */}
             <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #ddd', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', borderRadius: '8px', overflow: 'hidden' }}>
                     <thead style={{ background: '#333', color: 'white' }}>
@@ -106,9 +158,7 @@ function MisPrestamos({ usuario }) {
                         </tr>
                     </thead>
                     <tbody>
-                        {/* Iteramos sobre el arreglo ya filtrado */}
                         {prestamosFiltrados.map(p => {
-                            // Cálculo dinámico para saber si este préstamo en particular ya venció
                             const vencido = new Date(p.fechaLimite) < new Date();
 
                             return (
@@ -116,11 +166,9 @@ function MisPrestamos({ usuario }) {
 
                                     <td style={{ padding: '12px 15px', fontWeight: 'bold' }}>{p.equipo?.nombre}</td>
 
-                                    {/* COLUMNA VENCIMIENTO: Cambia a rojo y negrita si está Activo Y Vencido */}
                                     <td style={{ padding: '12px 15px', color: (vencido && p.estado === 2) ? '#d13438' : 'inherit', fontWeight: (vencido && p.estado === 2) ? 'bold' : 'normal' }}>
                                         {p.fechaLimite ? new Date(p.fechaLimite).toLocaleDateString() : '--'}
 
-                                        {/* Etiqueta visual extra de "VENCIDO" */}
                                         {(vencido && p.estado === 2) && (
                                             <span style={{ marginLeft: '5px', fontSize: '11px', background: '#d13438', color: 'white', padding: '2px 6px', borderRadius: '4px' }}>
                                                 VENCIDO
@@ -128,39 +176,30 @@ function MisPrestamos({ usuario }) {
                                         )}
                                     </td>
 
-                                    {/* COLUMNA ESTADO: Etiquetas visuales del estatus del trámite */}
                                     <td style={{ padding: '12px 15px', textAlign: 'center' }}>
                                         {p.estado === 1 && <span style={badgeStyle('#fff4ce', '#665d1e')}>Pendiente</span>}
                                         {p.estado === 2 && <span style={badgeStyle('#dff6dd', '#107C10')}>Activo</span>}
                                         {p.estado === 3 && <span style={badgeStyle('#f3f2f1', '#a19f9d')}>Finalizado</span>}
                                         {p.estado === 4 && <span style={badgeStyle('#fee', '#d13438')}>Rechazado</span>}
-                                        {p.estado === 5 && <span style={badgeStyle('#e1dfdd', '#333')}>En Renovación</span>}
+                                        {p.estado === 5 && <span style={badgeStyle('#e1f0fa', '#0078D4')}>En Renovación</span>}
+                                        {p.estado === 6 && <span style={badgeStyle('#ffdab9', '#d83b01')}>En Devolución</span> }
                                     </td>
 
-                                    {/* COLUMNA ACCIONES: Funciones disponibles para el Solicitante */}
                                     <td style={{ padding: '12px 15px', textAlign: 'center' }}>
-
-                                        {/* Las acciones solo están disponibles si el préstamo está Activo (2) */}
                                         {p.estado === 2 && (
                                             <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
-
-                                                {/* El botón de Renovar SOLO aparece si la fecha límite ya se superó (vencido) */}
                                                 {vencido && (
                                                     <button onClick={() => handleRenovar(p.id)} style={btnAccion} title="Renovar Préstamo">🔄</button>
                                                 )}
-
                                                 <button onClick={() => handleNotificar(p.id)} style={btnSecundario} title="Notificar Devolución">📩</button>
                                             </div>
                                         )}
-
-                                        {/* Placeholder si el estado no permite acciones */}
                                         {p.estado !== 2 && <span style={{ color: '#aaa', fontSize: '13px' }}>--</span>}
                                     </td>
                                 </tr>
                             );
                         })}
 
-                        {/* Fila de contingencia si no hay resultados en el filtro actual */}
                         {prestamosFiltrados.length === 0 && (
                             <tr>
                                 <td colSpan="4" style={{ textAlign: 'center', padding: '30px', color: '#666' }}>
