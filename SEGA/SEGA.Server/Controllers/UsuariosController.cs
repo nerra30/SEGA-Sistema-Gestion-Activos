@@ -55,5 +55,33 @@ namespace SEGA.Server.Controllers
             await _context.SaveChangesAsync();
             return Ok();
         }
+
+        // POST: api/usuarios/login
+        [HttpPost("login")]
+        public async Task<ActionResult<Usuario>> Login([FromBody] LoginDto credenciales)
+        {
+            // Busca en la base de datos a un usuario que coincida exactamente con ese email y contraseña
+            var usuario = await _context.Usuarios
+                .Include(u => u.Rol) // Incluimos el rol para que React sepa qué menú mostrarle
+                .FirstOrDefaultAsync(u => u.Email == credenciales.Email && u.Password == credenciales.Password);
+
+            // Si no lo encuentra, devuelve un error 401 (No Autorizado)
+            if (usuario == null)
+            {
+                return Unauthorized("Correo o contraseña incorrectos.");
+            }
+
+            // Por seguridad, borramos la contraseña de la memoria antes de enviarle los datos a React
+            usuario.Password = "";
+
+            return Ok(usuario); // Le mandamos los datos del usuario al Frontend
+        }
     }
+
+    public class LoginDto
+    {
+        public string Email { get; set; } = null!;
+        public string Password { get; set; } = null!;
+    }
+
 }

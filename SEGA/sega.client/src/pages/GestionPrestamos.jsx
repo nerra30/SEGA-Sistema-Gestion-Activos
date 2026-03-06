@@ -156,7 +156,7 @@ function GestionPrestamos() {
 
     return (
         <div>
-            <h2>Gestión de Equipos</h2>
+            <h2>Gestión de Préstamos</h2>
 
             {/* TARJETAS DEL DASHBOARD SUPERIOR */}
             <div style={{ display: 'flex', gap: '20px', marginBottom: '20px', flexWrap: 'wrap' }}>

@@ -105,7 +105,7 @@ namespace SEGA.Server.Controllers
 
             // TRUCO EXCELENTE: Como no guardamos los "días solicitados" en la BD para no alterar tu diseño SQL,
             // guardamos la petición en la nota para que el gestor lo lea.
-            prestamo.NotaDevolucion = $"⚠️ SOLICITA RENOVACIÓN POR {dto.Dias} DÍAS EXTRA.";
+            prestamo.NotaDevolucion = $"RENOVACION:{dto.Dias}";
 
             await _contexto.SaveChangesAsync();
             return Ok();
@@ -120,6 +120,7 @@ namespace SEGA.Server.Controllers
             if (prestamo == null) return NotFound();
 
             prestamo.NotaDevolucion = dto.Nota;
+            prestamo.Estado = 6; // en proceso de devolución (el gestor verá la nota y decidirá cuándo finalizar el préstamo)
 
             await _contexto.SaveChangesAsync();
             return Ok();
