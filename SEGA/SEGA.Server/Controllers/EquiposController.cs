@@ -16,7 +16,7 @@ namespace SEGA.Server.Controllers
             _contexto = contexto;
         }
 
-        // 1. OBTENER TODOS LOS EQUIPOS (GET: api/equipos)
+        // 1. OBTENER TODOS LOS EQUIPOS (GET: api/equipos) - Devuelve una lista de equipos con su categoría incluida
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Equipo>>> GetEquipos()
         {
@@ -26,7 +26,7 @@ namespace SEGA.Server.Controllers
                 .ToListAsync();
         }
 
-        // 2. CREAR EQUIPO (POST: api/equipos)
+        // 2. CREAR EQUIPO (POST: api/equipos)  - Recibe un equipo desde React y lo guarda en la base de datos
         [HttpPost]
         public async Task<IActionResult> PostEquipo(Equipo equipo)
         {
@@ -37,7 +37,7 @@ namespace SEGA.Server.Controllers
             return Ok();
         }
 
-        // 3. EDITAR EQUIPO (PUT: api/equipos/{id})
+        // 3. EDITAR EQUIPO (PUT: api/equipos/{id})  - Recibe un equipo actualizado desde React y lo guarda en la base de datos
         [HttpPut("{id}")]
         public async Task<IActionResult> PutEquipo(int id, Equipo equipo)
         {
@@ -58,7 +58,7 @@ namespace SEGA.Server.Controllers
             return Ok();
         }
 
-        // 4. ELIMINAR EQUIPO (DELETE: api/equipos/{id})
+        // 4. ELIMINAR EQUIPO (DELETE: api/equipos/{id}) - Recibe el ID del equipo a eliminar desde React y lo borra de la base de datos
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteEquipo(int id)
         {
@@ -81,6 +81,8 @@ namespace SEGA.Server.Controllers
             return Ok();
         }
 
+
+        // MÉTODO AUXILIAR PARA VER SI UN EQUIPO EXISTE (USADO EN EL PUT)
         private bool EquipoExists(int id)
         {
             return _contexto.Equipos.Any(e => e.Id == id);

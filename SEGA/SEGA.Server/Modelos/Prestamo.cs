@@ -18,6 +18,7 @@ namespace SEGA.Server.Modelos
         [Column("Observaciones")]
         public string? NotaDevolucion { get; set; }
 
+        // Propiedad calculada para mostrar los días solicitados en la renovación
         [NotMapped]
         public int DiasSolicitados
         {

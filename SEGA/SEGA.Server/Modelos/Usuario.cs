@@ -11,7 +11,6 @@ namespace SEGA.Server.Modelos
 
         public int RolId { get; set; }
 
-        // Navegación
         public Rol? Rol { get; set; }
 
         [JsonIgnore]

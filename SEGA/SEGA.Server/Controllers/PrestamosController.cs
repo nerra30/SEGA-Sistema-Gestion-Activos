@@ -16,7 +16,7 @@ namespace SEGA.Server.Controllers
             _contexto = contexto;
         }
 
-        // 1. OBTENER TODOS LOS PRÉSTAMOS
+        // 1. OBTENER TODOS LOS PRÉSTAMOS (GET: api/prestamos) - Devuelve una lista de préstamos con su equipo y usuario incluidos
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Prestamo>>> ObtenerPrestamos()
         {
@@ -26,7 +26,8 @@ namespace SEGA.Server.Controllers
                 .ToListAsync();
         }
 
-        // 2. CREAR SOLICITUD DE PRÉSTAMO
+        // 2. CREAR SOLICITUD DE PRÉSTAMO (POST: api/prestamos) - Recibe una solicitud de préstamo desde React,
+        // la guarda en la base de datos y bloquea el equipo temporalmente
         [HttpPost]
         public async Task<ActionResult<Prestamo>> SolicitarPrestamo(Prestamo prestamo)
         {
@@ -46,7 +47,7 @@ namespace SEGA.Server.Controllers
         }
 
         // 3. CAMBIAR ESTADO (Aprobar o Rechazar por el Gestor)
-        // PUT: api/prestamos/{id}/estado
+        // PUT: api/prestamos/{id}/estado - Recibe el nuevo estado del préstamo desde React y lo actualiza en la base de datos
         [HttpPut("{id}/estado")]
         public async Task<IActionResult> GestionarEstado(int id, [FromBody] CambiarEstadoDto dto)
         {
@@ -72,7 +73,7 @@ namespace SEGA.Server.Controllers
         }
 
         // 4. FINALIZAR PRÉSTAMO (Devolución del equipo al Gestor)
-        // PUT: api/prestamos/{id}/finalizar
+        // PUT: api/prestamos/{id}/finalizar - Recibe el estado del equipo al devolverlo (Bueno o Malo) y actualiza el préstamo y el equipo en la base de datos
         [HttpPut("{id}/finalizar")]
         public async Task<IActionResult> FinalizarPrestamo(int id, [FromBody] FinalizarDto dto)
         {
@@ -93,7 +94,7 @@ namespace SEGA.Server.Controllers
             return Ok();
         }
 
-        // 5. SOLICITAR RENOVACIÓN (El alumno pide más tiempo)
+        // 5. SOLICITAR RENOVACIÓN (El usuario pide más días para el préstamo)
         // PUT: api/prestamos/{id}/renovar
         [HttpPut("{id}/renovar")]
         public async Task<IActionResult> SolicitarRenovacion(int id, [FromBody] RenovarDto dto)
@@ -103,15 +104,15 @@ namespace SEGA.Server.Controllers
 
             prestamo.Estado = 5; // 5 = En Renovación
 
-            // TRUCO EXCELENTE: Como no guardamos los "días solicitados" en la BD para no alterar tu diseño SQL,
-            // guardamos la petición en la nota para que el gestor lo lea.
+            // Guardamos en NotaDevolucion la cantidad de días que el usuario solicita para la renovación,
+            // así el gestor lo verá y decidirá si aprueba o no la renovación (en caso de aprobarla, el gestor actualizará el préstamo con la nueva fecha límite)
             prestamo.NotaDevolucion = $"RENOVACION:{dto.Dias}";
 
             await _contexto.SaveChangesAsync();
             return Ok();
         }
 
-        // 6. NOTIFICAR DEVOLUCIÓN (El alumno avisa que dejó el equipo)
+        // 6. NOTIFICAR DEVOLUCIÓN (El usuario ya devolvió el equipo pero quiere dejar una nota para el gestor, por ejemplo: "El equipo tiene un problema en la pantalla")
         // PUT: api/prestamos/{id}/notificar
         [HttpPut("{id}/notificar")]
         public async Task<IActionResult> NotificarDevolucion(int id, [FromBody] NotificarDto dto)

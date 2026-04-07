@@ -11,7 +11,6 @@ namespace SEGA.Server.Modelos
 
         public int? CategoriaId { get; set; }
 
-        // Navegación
         public Categoria? Categoria { get; set; }
 
         [JsonIgnore]

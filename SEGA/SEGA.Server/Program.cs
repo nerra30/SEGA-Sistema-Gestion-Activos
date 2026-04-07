@@ -4,7 +4,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-// CONFIGURAR CORS (Permitir que React hable con C#)
+// CONFIGURAR CORS (Permitir que React hable con C#) 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("NuevaPolitica", app =>

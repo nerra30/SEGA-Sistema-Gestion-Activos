@@ -18,7 +18,7 @@ namespace SEGA.Server.Controllers
             _context = context;
         }
 
-        // 1. LEER (GET: api/categorias)
+        // 1. LEER (GET: api/categorias) - Devuelve una lista de categorías
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Categoria>>> GetCategorias()
         {
@@ -26,7 +26,7 @@ namespace SEGA.Server.Controllers
             return await _context.Categorias.ToListAsync();
         }
 
-        // 2. CREAR (POST: api/categorias)
+        // 2. CREAR (POST: api/categorias) - Recibe una categoría desde React y la guarda en la base de datos
         [HttpPost]
         public async Task<IActionResult> PostCategoria(Categoria categoria)
         {
@@ -38,7 +38,7 @@ namespace SEGA.Server.Controllers
             return Ok(); // Le dice a React que todo salió bien (Status 200)
         }
 
-        // 3. ACTUALIZAR (PUT: api/categorias/{id})
+        // 3. ACTUALIZAR (PUT: api/categorias/{id}) - Recibe una categoría actualizada desde React y la guarda en la base de datos
         [HttpPut("{id}")]
         public async Task<IActionResult> PutCategoria(int id, Categoria categoria)
         {
@@ -60,7 +60,7 @@ namespace SEGA.Server.Controllers
             return Ok();
         }
 
-        // 4. ELIMINAR (DELETE: api/categorias/{id})
+        // 4. ELIMINAR (DELETE: api/categorias/{id}) - Recibe el ID de la categoría a eliminar desde React y la borra de la base de datos
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCategoria(int id)
         {
@@ -74,7 +74,7 @@ namespace SEGA.Server.Controllers
             return Ok(); // Esto hará que res.ok sea "true" en tu Frontend
         }
 
-        // Función auxiliar para comprobar si existe
+        // Función auxiliar para comprobar si existe una categoría por su ID (usada en el PUT)
         private bool CategoriaExists(int id)
         {
             return _context.Categorias.Any(e => e.Id == id);

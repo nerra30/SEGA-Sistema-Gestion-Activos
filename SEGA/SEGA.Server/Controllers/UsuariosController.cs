@@ -16,7 +16,7 @@ namespace SEGA.Server.Controllers
             _context = context;
         }
 
-        // GET: api/usuarios (¡Este es el que necesita el Login para dejarte entrar!)
+        // GET: api/usuario (Para obtener la lista de usuarios en el CRUD)
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Usuario>>> GetUsuarios()
         {
@@ -32,7 +32,7 @@ namespace SEGA.Server.Controllers
             return Ok();
         }
 
-        // PUT: api/usuarios/{id} (Para editar)
+        // PUT: api/usuarios/{id} (Para editar usuarios en el CRUD)
         [HttpPut("{id}")]
         public async Task<IActionResult> PutUsuario(int id, Usuario usuario)
         {
@@ -44,7 +44,7 @@ namespace SEGA.Server.Controllers
             return Ok();
         }
 
-        // DELETE: api/usuarios/{id} (Para eliminar)
+        // DELETE: api/usuarios/{id} (Para eliminar usuarios en el CRUD)
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUsuario(int id)
         {
@@ -56,11 +56,11 @@ namespace SEGA.Server.Controllers
             return Ok();
         }
 
-        // POST: api/usuarios/login
+        // POST: api/usuarios/login (Para hacer el login de usuarios)
         [HttpPost("login")]
         public async Task<ActionResult<Usuario>> Login([FromBody] LoginDto credenciales)
         {
-            // Busca en la base de datos a un usuario que coincida exactamente con ese email y contraseña
+            // Busca en la base de datos a un usuario que coincida exactamente con email y contraseña
             var usuario = await _context.Usuarios
                 .Include(u => u.Rol) // Incluimos el rol para que React sepa qué menú mostrarle
                 .FirstOrDefaultAsync(u => u.Email == credenciales.Email && u.Password == credenciales.Password);
@@ -78,6 +78,7 @@ namespace SEGA.Server.Controllers
         }
     }
 
+    // DTO para recibir las credenciales de login
     public class LoginDto
     {
         public string Email { get; set; } = null!;
